@@ -1,0 +1,12 @@
+CREATE DATABASE supportdb;
+USE supportdb;
+CREATE TABLE tickets(
+    ticket_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_name VARCHAR(50) NOT NULL,
+    issue VARCHAR(200) NOT NULL,
+    created_time DATETIME,
+    closed_time DATETIME,
+    status VARCHAR(20)
+);
+USE supportdb;
+SELECT * FROM tickets;
