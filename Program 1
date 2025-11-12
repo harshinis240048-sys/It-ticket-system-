@@ -1,0 +1,122 @@
+ support;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
+
+public class TicketMain extends JFrame implements ActionListener {
+
+    JTextField userName;
+    JTextArea issue;
+    JButton createBtn, closeBtn, viewBtn;
+    Connection con;
+
+    TicketMain() {
+        setTitle("IT Ticketing Support System");
+        setSize(450, 300);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        userName = new JTextField(12);
+        issue = new JTextArea(3, 12);
+        createBtn = new JButton("Create Ticket");
+        closeBtn = new JButton("Close Ticket");
+        viewBtn = new JButton("View Tickets");
+
+        setLayout(new GridLayout(4, 2, 10, 10));
+
+        add(new JLabel("User Name:"));
+        add(userName);
+
+        add(new JLabel("Issue Description:"));
+        add(new JScrollPane(issue));
+
+        add(createBtn);
+        add(closeBtn);
+        add(viewBtn);
+
+        createBtn.addActionListener(this);
+        closeBtn.addActionListener(this);
+        viewBtn.addActionListener(this);
+
+        connectDB();
+        setVisible(true);
+    }
+
+    void connectDB() {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            con = DriverManager.getConnection(
+                    "jdbc:mysql://localhost:3306/supportdb",
+                    "root",
+                    "Lekha@2007");
+            JOptionPane.showMessageDialog(this, "Database Connected!");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "DB Error: " + e.getMessage());
+        }
+    }
+
+    public void actionPerformed(ActionEvent e) {
+
+        if (e.getSource() == createBtn) {
+            try {
+                String user = userName.getText();
+                String iss = issue.getText();
+
+                PreparedStatement ps = con.prepareStatement(
+                        "INSERT INTO tickets (user_name, issue, created_time, status) VALUES (?, ?, NOW(), 'OPEN')");
+                ps.setString(1, user);
+                ps.setString(2, iss);
+
+                int rows = ps.executeUpdate();
+                if (rows > 0)
+                    JOptionPane.showMessageDialog(this, "Ticket Created Successfully!");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+            }
+        }
+
+        if (e.getSource() == closeBtn) {
+            try {
+                String user = userName.getText();
+                PreparedStatement ps = con.prepareStatement(
+                        "UPDATE tickets SET closed_time = NOW(), status = 'CLOSED' WHERE user_name = ? AND status='OPEN'");
+                ps.setString(1, user);
+
+                int rows = ps.executeUpdate();
+                if (rows > 0)
+                    JOptionPane.showMessageDialog(this, "Ticket Closed!");
+                else
+                    JOptionPane.showMessageDialog(this, "No Open Ticket for this user.");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+            }
+        }
+
+        if (e.getSource() == viewBtn) {
+            try {
+                Statement st = con.createStatement();
+                ResultSet rs = st.executeQuery("SELECT * FROM tickets");
+
+                StringBuilder data = new StringBuilder("ID\tUser\tStatus\n");
+                data.append("--------------------------------\n");
+
+                while (rs.next()) {
+                    data.append(rs.getInt("ticket_id")).append("\t")
+                        .append(rs.getString("user_name")).append("\t")
+                        .append(rs.getString("status")).append("\n");
+                }
+
+                JTextArea area = new JTextArea(data.toString(), 15, 40);
+                JOptionPane.showMessageDialog(this, new JScrollPane(area));
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        new TicketMain();
+    }
+}
